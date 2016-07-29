@@ -1446,8 +1446,60 @@ rend_service_authorization_t*
 rend_client_lookup_service_authorization(const char *onion_address)
 {
   tor_assert(onion_address);
-  if (!auth_hid_servs) return NULL;
-  return strmap_get(auth_hid_servs, onion_address);
+  rend_service_authorization_t *auth =
+                   tor_malloc(sizeof(rend_service_authorization_t));
+  auth->auth_type = REND_NO_AUTH;
+  /* Test if there is a auth data in the address itself */
+  if (strlen(onion_address) == REND_AUTH_DATA_HYPHEN_SERVICE_ID_LEN_BASE32) {
+    char *dash;
+    dash = strrchr(onion_address, '-');
+    *dash = 0;
+    char descriptor_cookie_base32ext[REND_DESC_COOKIE_LEN_BASE32+6+1];
+    char descriptor_cookie_tmp[REND_DESC_COOKIE_LEN+4+1];
+    uint8_t auth_type_val;
+
+    /* Add trailing zero bytes (aaaaaa) to make base32-decoding happy. */
+    tor_snprintf(descriptor_cookie_base32ext,
+                 REND_DESC_COOKIE_LEN_BASE32+6+1,
+                 "%saaaaaa", onion_address);
+    if (base32_decode(descriptor_cookie_tmp, sizeof(descriptor_cookie_tmp),
+                descriptor_cookie_base32ext,
+                strlen(descriptor_cookie_base32ext)) < 0) {
+        log_warn(LD_CONFIG, "Decoding authorization cookie from the"
+                            " address failed: '%s'. Skipping",
+                               onion_address);
+    }
+    memcpy(auth->descriptor_cookie, descriptor_cookie_tmp,
+                       REND_DESC_COOKIE_LEN);
+
+    log_debug(LD_CONFIG, "Got cookie from client: %s", hex_str(auth->descriptor_cookie,
+                                    sizeof(auth->descriptor_cookie)));
+    auth_type_val = ((uint8_t)descriptor_cookie_tmp[16]) >> 6;
+    switch (auth_type_val) {
+        case 0:
+            auth->auth_type = REND_BASIC_AUTH;
+            break;
+        case 1:
+            auth->auth_type = REND_STEALTH_AUTH;
+            break;
+        default:
+            auth->auth_type = REND_BROKEN_AUTH;
+            log_warn(LD_CONFIG, "Authorization cookie has unknown authorization "
+                                "type encoded.");
+    }
+    tor_snprintf(auth->onion_address, REND_SERVICE_ADDRESS_LEN+1,
+                 "%s.onion", dash+1); // not actually used
+    /* Strip auth part from the address */
+    strlcpy(onion_address, dash+1, REND_SERVICE_ID_LEN_BASE32+1);
+  } else if (auth_hid_servs) {
+    /* It's a plain short address, maybe there is some auth in the config? */
+    rend_service_authorization_t *auth_from_config =
+                               strmap_get(auth_hid_servs, onion_address);
+    if (auth_from_config) {
+        memcpy(auth, auth_from_config, sizeof(rend_service_authorization_t));
+    }
+  }
+  return auth;
 }
 
 /** Helper: Free storage held by rend_service_authorization_t. */

@@ -1690,20 +1690,24 @@ connection_ap_handshake_rewrite_and_attach(entry_connection_t *conn,
     rend_service_authorization_t *client_auth =
       rend_client_lookup_service_authorization(socks->address);
 
-    const uint8_t *cookie = NULL;
-    rend_auth_type_t auth_type = REND_NO_AUTH;
-    if (client_auth) {
-      log_info(LD_REND, "Using previously configured client authorization "
-               "for hidden service request.");
-      auth_type = client_auth->auth_type;
-      cookie = client_auth->descriptor_cookie;
+    tor_assert(client_auth);
+    if (client_auth->auth_type == REND_BROKEN_AUTH) {
+      log_warn(LD_REND, "Authorization cookie has unknown authorization "
+                                                        "type encoded.");
+      connection_mark_unattached_ap(conn, END_STREAM_REASON_RESOLVEFAILED);
+      return -1;
+    }
+    if (client_auth->auth_type != REND_NO_AUTH) {
+        log_info(LD_REND, "Using client authorization for hidden "
+                        "service request.");
     }
 
     /* Fill in the rend_data field so we can start doing a connection to
      * a hidden service. */
     rend_data_t *rend_data = ENTRY_TO_EDGE_CONN(conn)->rend_data =
-      rend_data_client_create(socks->address, NULL, (char *) cookie,
-                              auth_type);
+      rend_data_client_create(socks->address, NULL,
+                              client_auth->descriptor_cookie,
+                              client_auth->auth_type);
     if (rend_data == NULL) {
       return -1;
     }
@@ -3412,7 +3416,7 @@ parse_extended_hostname(char *address)
 {
     char *s;
     char *q;
-    char query[REND_SERVICE_ID_LEN_BASE32+1];
+    char query[REND_AUTH_DATA_HYPHEN_SERVICE_ID_LEN_BASE32+1];
 
     s = strrchr(address,'.');
     if (!s)
@@ -3432,8 +3436,8 @@ parse_extended_hostname(char *address)
       goto failed; /* reject sub-domain, as DNS does */
     }
     q = (NULL == q) ? address : q + 1;
-    if (strlcpy(query, q, REND_SERVICE_ID_LEN_BASE32+1) >=
-        REND_SERVICE_ID_LEN_BASE32+1)
+    if (strlcpy(query, q, REND_AUTH_DATA_HYPHEN_SERVICE_ID_LEN_BASE32+1) >=
+        REND_AUTH_DATA_HYPHEN_SERVICE_ID_LEN_BASE32+1)
       goto failed;
     if (q != address) {
       memmove(address, q, strlen(q) + 1 /* also get \0 */);

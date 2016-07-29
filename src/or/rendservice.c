@@ -1208,6 +1208,8 @@ rend_service_load_auth_keys(rend_service_t *s, const char *hfname)
     if (parsed) {
       memcpy(client->descriptor_cookie, parsed->descriptor_cookie,
              REND_DESC_COOKIE_LEN);
+      log_debug(LD_CONFIG, "Got cookie from file: %s", hex_str(client->descriptor_cookie,
+                                    sizeof(client->descriptor_cookie)));
     } else {
       crypto_rand((char *) client->descriptor_cookie, REND_DESC_COOKIE_LEN);
     }

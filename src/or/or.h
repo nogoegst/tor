@@ -693,8 +693,16 @@ typedef enum {
 /** Length of 'y' portion of 'y.onion' URL. */
 #define REND_SERVICE_ID_LEN_BASE32 16
 
+/** Length of 'auth-y' portion of 'auth-y.onion' URL. */
+#define REND_AUTH_DATA_HYPHEN_SERVICE_ID_LEN_BASE32 \
+        REND_DESC_COOKIE_LEN_BASE32+1+REND_SERVICE_ID_LEN_BASE32
+
 /** Length of 'y.onion' including '.onion' URL. */
-#define REND_SERVICE_ADDRESS_LEN (16+1+5)
+#define REND_SERVICE_ADDRESS_LEN (REND_SERVICE_ID_LEN_BASE32+1+5)
+
+/** Length of 'auth-y.onion' including '.onion' URL. */
+#define REND_AUTH_DATA_HYPHEN_SERVICE_ADDRESS_LEN \
+ (REND_AUTH_DATA_HYPHEN_SERVICE_ID_LEN_BASE32+1+REND_SERVICE_ID_LEN_BASE32+1+5)
 
 /** Length of a binary-encoded rendezvous service ID. */
 #define REND_SERVICE_ID_LEN 10
@@ -727,6 +735,10 @@ typedef enum {
 /** Length of the descriptor cookie that is used for client authorization
  * to hidden services. */
 #define REND_DESC_COOKIE_LEN 16
+
+/** Length of the base32-encoded descriptor cookie that is used for
+ * exchanging client authorization between hidden service and client. */
+#define REND_DESC_COOKIE_LEN_BASE32 26
 
 /** Length of the base64-encoded descriptor cookie that is used for
  * exchanging client authorization between hidden service and client. */
@@ -763,6 +775,7 @@ typedef enum {
 
 /** Client authorization type that a hidden service performs. */
 typedef enum rend_auth_type_t {
+  REND_BROKEN_AUTH = -1,
   REND_NO_AUTH      = 0,
   REND_BASIC_AUTH   = 1,
   REND_STEALTH_AUTH = 2,
