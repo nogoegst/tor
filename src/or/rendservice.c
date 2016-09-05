@@ -3630,6 +3630,8 @@ rend_consider_services_intro_points(void)
 
 #define MIN_REND_INITIAL_POST_DELAY (30)
 #define MIN_REND_INITIAL_POST_DELAY_TESTING (5)
+#define MIN_REND_EPHEMERAL_INITIAL_POST_DELAY (3)
+#define MIN_REND_EPHEMERAL_INITIAL_POST_DELAY_TESTING (1)
 
 /** Regenerate and upload rendezvous service descriptors for all
  * services, if necessary. If the descriptor has been dirty enough
@@ -3645,12 +3647,19 @@ rend_consider_services_upload(time_t now)
   int i;
   rend_service_t *service;
   int rendpostperiod = get_options()->RendPostPeriod;
-  int rendinitialpostdelay = (get_options()->TestingTorNetwork ?
-                              MIN_REND_INITIAL_POST_DELAY_TESTING :
-                              MIN_REND_INITIAL_POST_DELAY);
+  int rendinitialpostdelay;
 
   for (i=0; i < smartlist_len(rend_service_list); ++i) {
     service = smartlist_get(rend_service_list, i);
+    if (service->directory == NULL) { /* Ephemeral service */
+      rendinitialpostdelay = (get_options()->TestingTorNetwork ?
+                              MIN_REND_EPHEMERAL_INITIAL_POST_DELAY_TESTING :
+                              MIN_REND_EPHEMERAL_INITIAL_POST_DELAY);
+    } else { /* Non-ephemeral service */
+      rendinitialpostdelay = (get_options()->TestingTorNetwork ?
+                              MIN_REND_INITIAL_POST_DELAY_TESTING :
+                              MIN_REND_INITIAL_POST_DELAY);
+    }
     if (!service->next_upload_time) { /* never been uploaded yet */
       /* The fixed lower bound of rendinitialpostdelay seconds ensures that
        * the descriptor is stable before being published. See comment below. */
