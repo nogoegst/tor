@@ -94,6 +94,7 @@ typedef struct rend_service_t {
   unsigned int n_intro_points_wanted; /**< Number of intro points this
                                        * service wants to have open. */
   rend_service_descriptor_t *desc; /**< Current hidden service descriptor. */
+  int once_uploaded;  /* Whether descriptor of this rend service was ever uploaded */
   time_t desc_is_dirty; /**< Time at which changes to the hidden service
                          * descriptor content occurred, or 0 if it's
                          * up-to-date. */

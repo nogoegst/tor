@@ -3921,39 +3921,46 @@ rend_consider_services_upload(time_t now)
   int i;
   rend_service_t *service;
   const or_options_t *options = get_options();
-  int rendpostperiod = options->RendPostPeriod;
-  int rendinitialpostdelay = (options->TestingTorNetwork ?
+  time_t rendpostperiod = (time_t) options->RendPostPeriod;
+  time_t rendinitialpostdelay = (time_t) (options->TestingTorNetwork ?
                               MIN_REND_INITIAL_POST_DELAY_TESTING :
                               MIN_REND_INITIAL_POST_DELAY);
 
   for (i=0; i < smartlist_len(rend_service_list); ++i) {
     service = smartlist_get(rend_service_list, i);
     if (!service->next_upload_time) { /* never been uploaded yet */
+      service->once_uploaded = 0;
       /* The fixed lower bound of rendinitialpostdelay seconds ensures that
        * the descriptor is stable before being published. See comment below. */
-      service->next_upload_time =
-        now + rendinitialpostdelay + crypto_rand_int(2*rendpostperiod);
+
       /* Single Onion Services prioritise availability over hiding their
        * startup time, as their IP address is publicly discoverable anyway.
-       */
-      if (rend_service_reveal_startup_time(options)) {
-        service->next_upload_time = now + rendinitialpostdelay;
-      }
+       * In this case we stick to the lower bound. */
+      time_t rend_post_additional_delay =
+        (time_t) rend_service_reveal_startup_time(options)?0:crypto_rand_int(2*rendpostperiod);
+      service->next_upload_time = now + rendinitialpostdelay + rend_post_additional_delay;
     }
     /* Does every introduction points have been established? */
     unsigned int intro_points_ready =
       count_established_intro_points(service) >=
         service->n_intro_points_wanted;
-    if (intro_points_ready &&
-        (service->next_upload_time < now ||
-        (service->desc_is_dirty &&
-         service->desc_is_dirty < now-rendinitialpostdelay))) {
+    if (intro_points_ready) {
       /* if it's time, or if the directory servers have a wrong service
        * descriptor and ours has been stable for rendinitialpostdelay seconds,
        * upload a new one of each format. */
-      rend_service_update_descriptor(service);
-      upload_service_descriptor(service);
+      if (service->next_upload_time < now) {
+        goto upload;
+      }
+      if (service->once_uploaded && service->desc_is_dirty &&
+          service->desc_is_dirty < now-rendinitialpostdelay) {
+        goto upload;
+      }
     }
+    continue;
+   upload:
+    rend_service_update_descriptor(service);
+    upload_service_descriptor(service);
+    service->once_uploaded = 1;
   }
 }
 
