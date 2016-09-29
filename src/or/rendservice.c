@@ -3904,8 +3904,8 @@ rend_consider_services_intro_points(void)
   smartlist_free(retry_nodes);
 }
 
-#define MIN_REND_INITIAL_POST_DELAY (30)
-#define MIN_REND_INITIAL_POST_DELAY_TESTING (5)
+#define MIN_REND_INITIAL_POST_DELAY (5)
+#define MIN_REND_INITIAL_POST_DELAY_TESTING (3)
 
 /** Regenerate and upload rendezvous service descriptors for all
  * services, if necessary. If the descriptor has been dirty enough
