@@ -3917,8 +3917,18 @@ rend_consider_services_upload(time_t now)
   int i;
   rend_service_t *service;
   time_t stabilizing_period = (time_t) REND_DIRTY_DESC_STABILIZING_PERIOD;
+  time_t old_stabilizing_period = (time_t) 30;
   for (i=0; i < smartlist_len(rend_service_list); ++i) {
     service = smartlist_get(rend_service_list, i);
+    if (service->desc_is_dirty && service->last_upload_time) {
+      time_t was_stable_for = service->desc_is_dirty - service->last_upload_time;
+      if (stabilizing_period < was_stable_for &&
+          was_stable_for < old_stabilizing_period)
+        log_warn(LD_REND, "Service descriptor of %s has changed soon \
+                           after stabilizing period. Probably new stabilizing period \
+                           is too short.",
+                 safe_str_client(service->service_id));
+    }
     /* Does every introduction points have been established? */
     unsigned int intro_points_ready =
       count_established_intro_points(service) >=
@@ -3934,6 +3944,7 @@ rend_consider_services_upload(time_t now)
          service->desc_is_dirty < now - stabilizing_period))) {
       rend_service_update_descriptor(service);
       upload_service_descriptor(service);
+      service->last_upload_time = now;
     }
   }
 }
