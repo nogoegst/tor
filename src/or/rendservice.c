@@ -3902,53 +3902,36 @@ rend_consider_services_intro_points(void)
   smartlist_free(retry_nodes);
 }
 
-#define MIN_REND_INITIAL_POST_DELAY (30)
-#define MIN_REND_INITIAL_POST_DELAY_TESTING (5)
+#define REND_DIRTY_DESC_STABILIZING_PERIOD (3)
 
 /** Regenerate and upload rendezvous service descriptors for all
  * services, if necessary. If the descriptor has been dirty enough
  * for long enough, definitely upload; else only upload when the
  * periodic timeout has expired.
  *
- * For the first upload, pick a random time between now and two periods
- * from now, and pick it independently for each service.
+ * For the first upload, upload immediately.
  */
 void
 rend_consider_services_upload(time_t now)
 {
   int i;
   rend_service_t *service;
-  const or_options_t *options = get_options();
-  int rendpostperiod = options->RendPostPeriod;
-  int rendinitialpostdelay = (options->TestingTorNetwork ?
-                              MIN_REND_INITIAL_POST_DELAY_TESTING :
-                              MIN_REND_INITIAL_POST_DELAY);
-
+  time_t stabilizing_period = (time_t) REND_DIRTY_DESC_STABILIZING_PERIOD;
   for (i=0; i < smartlist_len(rend_service_list); ++i) {
     service = smartlist_get(rend_service_list, i);
-    if (!service->next_upload_time) { /* never been uploaded yet */
-      /* The fixed lower bound of rendinitialpostdelay seconds ensures that
-       * the descriptor is stable before being published. See comment below. */
-      service->next_upload_time =
-        now + rendinitialpostdelay + crypto_rand_int(2*rendpostperiod);
-      /* Single Onion Services prioritise availability over hiding their
-       * startup time, as their IP address is publicly discoverable anyway.
-       */
-      if (rend_service_reveal_startup_time(options)) {
-        service->next_upload_time = now + rendinitialpostdelay;
-      }
-    }
     /* Does every introduction points have been established? */
     unsigned int intro_points_ready =
       count_established_intro_points(service) >=
         service->n_intro_points_wanted;
     if (intro_points_ready &&
-        (service->next_upload_time < now ||
-        (service->desc_is_dirty &&
-         service->desc_is_dirty < now-rendinitialpostdelay))) {
-      /* if it's time, or if the directory servers have a wrong service
-       * descriptor and ours has been stable for rendinitialpostdelay seconds,
-       * upload a new one of each format. */
+	/* never been uploaded */
+        (!service->next_upload_time ||
+        /* it's time to upload */
+        service->next_upload_time < now ||
+        /* once uploaded and directory servers have a wrong service descriptor */
+        /* and ours has been stable for stablizing_period */
+        (service->next_upload_time && service->desc_is_dirty &&
+         service->desc_is_dirty < now - stabilizing_period))) {
       rend_service_update_descriptor(service);
       upload_service_descriptor(service);
     }
