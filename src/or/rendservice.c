@@ -3904,16 +3904,21 @@ rend_consider_services_intro_points(void)
   smartlist_free(retry_nodes);
 }
 
-#define MIN_REND_INITIAL_POST_DELAY (30)
-#define MIN_REND_INITIAL_POST_DELAY_TESTING (5)
+#define REND_DIRTY_DESC_STABILIZING_PERIOD (3)
+#define REND_DIRTY_DESC_STABILIZING_PERIOD_TESTING (0)
+#define OLD_REND_DIRTY_DESC_STABILIZING_PERIOD (30)
+#define DISKSERVICE_SHUFFLING_PERIOD (0)
+#define DISKSERVICE_SHUFFLING_PERIOD_TESTING (5*60)
 
 /** Regenerate and upload rendezvous service descriptors for all
  * services, if necessary. If the descriptor has been dirty enough
  * for long enough, definitely upload; else only upload when the
  * periodic timeout has expired.
  *
- * For the first upload, pick a random time between now and two periods
- * from now, and pick it independently for each service.
+ * For the first upload of on-disk service, pick a random time
+ * between now and DISKSERVICE_SHUFFLING_PERIOD from now, and
+ * pick it independently for each on-disk service.
+ * For the first upload of ephemeral service, upload immediately.
  */
 void
 rend_consider_services_upload(time_t now)
@@ -3921,23 +3926,36 @@ rend_consider_services_upload(time_t now)
   int i;
   rend_service_t *service;
   const or_options_t *options = get_options();
-  int rendpostperiod = options->RendPostPeriod;
-  int rendinitialpostdelay = (options->TestingTorNetwork ?
-                              MIN_REND_INITIAL_POST_DELAY_TESTING :
-                              MIN_REND_INITIAL_POST_DELAY);
-
+  time_t stabilizing_period = (time_t) (options->TestingTorNetwork ?
+                                        REND_DIRTY_DESC_STABILIZING_PERIOD_TESTING :
+                                        REND_DIRTY_DESC_STABILIZING_PERIOD);
+  time_t diskservice_shuffling_period = (time_t) (options->TestingTorNetwork ?
+                                        DISKSERVICE_SHUFFLING_PERIOD_TESTING :
+                                        DISKSERVICE_SHUFFLING_PERIOD);
+  time_t old_stabilizing_period = (time_t) OLD_REND_DIRTY_DESC_STABILIZING_PERIOD;
   for (i=0; i < smartlist_len(rend_service_list); ++i) {
     service = smartlist_get(rend_service_list, i);
-    if (!service->next_upload_time) { /* never been uploaded yet */
-      /* The fixed lower bound of rendinitialpostdelay seconds ensures that
-       * the descriptor is stable before being published. See comment below. */
-      service->next_upload_time =
-        now + rendinitialpostdelay + crypto_rand_int(2*rendpostperiod);
-      /* Single Onion Services prioritise availability over hiding their
-       * startup time, as their IP address is publicly discoverable anyway.
-       */
-      if (rend_service_reveal_startup_time(options)) {
-        service->next_upload_time = now + rendinitialpostdelay;
+    /* Drop a warning when stabilizing_period is not long enough */
+    /* compared to the old one. Assuming that the old one was enough. */
+    if (service->desc_is_dirty && service->last_upload_time) {
+      time_t was_stable_for = service->desc_is_dirty - service->last_upload_time;
+      if (stabilizing_period < was_stable_for &&
+          was_stable_for < old_stabilizing_period)
+        log_warn(LD_REND, "Service descriptor of %s has changed soon \
+                           after stabilizing period. Probably your network connection \
+                           isn't reliable. This can make your service unreliable as well.",
+                 safe_str_client(service->service_id));
+    }
+    unsigned int is_ephemeral = (service->directory == NULL);
+    service->next_upload_time = now;
+    /* Set initial delay, i.e. if descriptor has never been uploaded */
+    if (!service->last_upload_time) {
+      /* Non-ephemeral services are started at the same time that links */
+      /* them and thus reveals that they are operated by same entity. */
+      /* Randomizing initial delay for each of these services. */
+      if (!is_ephemeral) {
+        service->next_upload_time +=
+                           (time_t) crypto_rand_int(diskservice_shuffling_period);
       }
     }
     /* Does every introduction points have been established? */
@@ -3945,14 +3963,15 @@ rend_consider_services_upload(time_t now)
       count_established_intro_points(service) >=
         service->n_intro_points_wanted;
     if (intro_points_ready &&
+        /* it's time to upload */
         (service->next_upload_time < now ||
-        (service->desc_is_dirty &&
-         service->desc_is_dirty < now-rendinitialpostdelay))) {
-      /* if it's time, or if the directory servers have a wrong service
-       * descriptor and ours has been stable for rendinitialpostdelay seconds,
-       * upload a new one of each format. */
+        /* once uploaded and directory servers have a wrong service descriptor */
+        /* and ours has been stable for stablizing_period */
+         (service->last_upload_time && service->desc_is_dirty &&
+          service->desc_is_dirty < now - stabilizing_period))) {
       rend_service_update_descriptor(service);
       upload_service_descriptor(service);
+      service->last_upload_time = now;
     }
   }
 }
@@ -4199,20 +4218,6 @@ rend_service_allow_non_anonymous_connection(const or_options_t *options)
 {
   tor_assert(rend_service_non_anonymous_mode_consistent(options));
   return options->HiddenServiceSingleHopMode ? 1 : 0;
-}
-
-/* Do the options allow us to reveal the exact startup time of the onion
- * service?
- * Single Onion Services prioritise availability over hiding their
- * startup time, as their IP address is publicly discoverable anyway.
- * Must only be called after options_validate_single_onion() has successfully
- * checked onion service option consistency.
- * Returns true if tor is in non-anonymous hidden service mode. */
-int
-rend_service_reveal_startup_time(const or_options_t *options)
-{
-  tor_assert(rend_service_non_anonymous_mode_consistent(options));
-  return rend_service_non_anonymous_mode_enabled(options);
 }
 
 /* Is non-anonymous mode enabled using the HiddenServiceNonAnonymousMode

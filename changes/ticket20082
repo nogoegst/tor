@@ -1,0 +1,13 @@
+ o Minor features (onion services):
+   - Remove initial descriptor upload delay for ephemeral onion services.
+     Previously one had to wait useless 30 seconds before upload.
+     If descriptor becomes outdated after initial upload, it will be awaited
+     for 3s to stabilize. If descriptor changes too soon after this (< 30s),
+     a warning about unreliable network will be shown. Closes ticket 20082.
+
+ o Major bugfixes (onion services):
+   - Fix code that claimed to introduce random initial descriptor upload
+     delay to hinder linkability of services, but never actually worked.
+     Now there is a random delay up to 5m for each on-disk service.
+     Fixes bug 12500; bugfix on 0.0.9pre6.
+

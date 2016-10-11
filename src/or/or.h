@@ -3725,8 +3725,8 @@ typedef struct {
    * this tor instance a Single Onion Service.
    * HiddenServiceSingleHopMode requires HiddenServiceNonAnonymousMode to be
    * set to 1.
-   * Use rend_service_allow_non_anonymous_connection() or
-   * rend_service_reveal_startup_time() instead of using this option directly.
+   * Use rend_service_allow_non_anonymous_connection() instead of using
+   * this option directly.
    */
   int HiddenServiceSingleHopMode;
   /* Makes hidden service clients and servers non-anonymous on this tor

@@ -97,6 +97,8 @@ typedef struct rend_service_t {
   time_t desc_is_dirty; /**< Time at which changes to the hidden service
                          * descriptor content occurred, or 0 if it's
                          * up-to-date. */
+  time_t last_upload_time; /**< Last time hidden service descriptor has
+                            * been uploaded. */
   time_t next_upload_time; /**< Scheduled next hidden service descriptor
                             * upload time. */
   /** Replay cache for Diffie-Hellman values of INTRODUCE2 cells, to
@@ -194,7 +196,6 @@ void directory_post_to_hs_dir(rend_service_descriptor_t *renddesc,
 void rend_service_desc_has_uploaded(const rend_data_t *rend_data);
 
 int rend_service_allow_non_anonymous_connection(const or_options_t *options);
-int rend_service_reveal_startup_time(const or_options_t *options);
 int rend_service_non_anonymous_mode_enabled(const or_options_t *options);
 
 #endif
