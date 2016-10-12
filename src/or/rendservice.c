@@ -3927,13 +3927,15 @@ rend_consider_services_upload(time_t now)
   time_t old_stabilizing_period = (time_t) OLD_REND_DIRTY_DESC_STABILIZING_PERIOD;
   for (i=0; i < smartlist_len(rend_service_list); ++i) {
     service = smartlist_get(rend_service_list, i);
+    /* Drop a warning when stabilizing_period is not long enough */
+    /* compared to the old one. Assuming that the old one was enough. */
     if (service->desc_is_dirty && service->last_upload_time) {
       time_t was_stable_for = service->desc_is_dirty - service->last_upload_time;
       if (stabilizing_period < was_stable_for &&
           was_stable_for < old_stabilizing_period)
         log_warn(LD_REND, "Service descriptor of %s has changed soon \
-                           after stabilizing period. Probably new stabilizing period \
-                           is too short.",
+                           after stabilizing period. Probably your network connection \
+                           isn't reliable. This can make your service unreliable as well.",
                  safe_str_client(service->service_id));
     }
     /* Does every introduction points have been established? */
