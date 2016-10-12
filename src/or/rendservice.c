@@ -3903,6 +3903,7 @@ rend_consider_services_intro_points(void)
 }
 
 #define REND_DIRTY_DESC_STABILIZING_PERIOD (3)
+#define OLD_REND_DIRTY_DESC_STABILIZING_PERIOD (30)
 
 /** Regenerate and upload rendezvous service descriptors for all
  * services, if necessary. If the descriptor has been dirty enough
@@ -3917,7 +3918,7 @@ rend_consider_services_upload(time_t now)
   int i;
   rend_service_t *service;
   time_t stabilizing_period = (time_t) REND_DIRTY_DESC_STABILIZING_PERIOD;
-  time_t old_stabilizing_period = (time_t) 30;
+  time_t old_stabilizing_period = (time_t) OLD_REND_DIRTY_DESC_STABILIZING_PERIOD;
   for (i=0; i < smartlist_len(rend_service_list); ++i) {
     service = smartlist_get(rend_service_list, i);
     if (service->desc_is_dirty && service->last_upload_time) {
