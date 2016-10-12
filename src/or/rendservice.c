@@ -3907,6 +3907,7 @@ rend_consider_services_intro_points(void)
 #define REND_DIRTY_DESC_STABILIZING_PERIOD (3)
 #define REND_DIRTY_DESC_STABILIZING_PERIOD_TESTING (0)
 #define OLD_REND_DIRTY_DESC_STABILIZING_PERIOD (30)
+#define SHUFFLING_DISKSERVICE_PERIOD (10*60)
 
 /** Regenerate and upload rendezvous service descriptors for all
  * services, if necessary. If the descriptor has been dirty enough
@@ -3938,13 +3939,21 @@ rend_consider_services_upload(time_t now)
                            isn't reliable. This can make your service unreliable as well.",
                  safe_str_client(service->service_id));
     }
+    unsigned int is_ephemeral = (service->directory == NULL);
+    /* Non-ephemeral services are started at the same time that links */
+    /* them and thus reveals that they are operated by same entity. */
+    /* Randomizing initial delay for each of these services. */
+    if (!is_ephemeral) {
+      service->next_upload_time = now +
+                         (time_t) crypto_rand_int(SHUFFLING_DISKSERVICE_PERIOD);
+    }
     /* Does every introduction points have been established? */
     unsigned int intro_points_ready =
       count_established_intro_points(service) >=
         service->n_intro_points_wanted;
     if (intro_points_ready &&
-	/* never been uploaded */
-        (!service->last_upload_time ||
+	/* never been uploaded and ephemeral*/
+        ((!service->last_upload_time && is_ephemeral) ||
         /* it's time to upload */
         service->next_upload_time < now ||
         /* once uploaded and directory servers have a wrong service descriptor */
