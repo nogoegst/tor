@@ -196,7 +196,6 @@ void directory_post_to_hs_dir(rend_service_descriptor_t *renddesc,
 void rend_service_desc_has_uploaded(const rend_data_t *rend_data);
 
 int rend_service_allow_non_anonymous_connection(const or_options_t *options);
-int rend_service_reveal_startup_time(const or_options_t *options);
 int rend_service_non_anonymous_mode_enabled(const or_options_t *options);
 
 #endif
