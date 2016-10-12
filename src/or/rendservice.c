@@ -3903,6 +3903,7 @@ rend_consider_services_intro_points(void)
 }
 
 #define REND_DIRTY_DESC_STABILIZING_PERIOD (3)
+#define REND_DIRTY_DESC_STABILIZING_PERIOD_TESTING (0)
 #define OLD_REND_DIRTY_DESC_STABILIZING_PERIOD (30)
 
 /** Regenerate and upload rendezvous service descriptors for all
@@ -3917,7 +3918,10 @@ rend_consider_services_upload(time_t now)
 {
   int i;
   rend_service_t *service;
-  time_t stabilizing_period = (time_t) REND_DIRTY_DESC_STABILIZING_PERIOD;
+  const or_options_t *options = get_options();
+  time_t stabilizing_period = (time_t) (options->TestingTorNetwork ?
+                                        REND_DIRTY_DESC_STABILIZING_PERIOD :
+                                        REND_DIRTY_DESC_STABILIZING_PERIOD_TESTING);
   time_t old_stabilizing_period = (time_t) OLD_REND_DIRTY_DESC_STABILIZING_PERIOD;
   for (i=0; i < smartlist_len(rend_service_list); ++i) {
     service = smartlist_get(rend_service_list, i);
