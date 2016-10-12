@@ -4193,20 +4193,6 @@ rend_service_allow_non_anonymous_connection(const or_options_t *options)
   return options->HiddenServiceSingleHopMode ? 1 : 0;
 }
 
-/* Do the options allow us to reveal the exact startup time of the onion
- * service?
- * Single Onion Services prioritise availability over hiding their
- * startup time, as their IP address is publicly discoverable anyway.
- * Must only be called after options_validate_single_onion() has successfully
- * checked onion service option consistency.
- * Returns true if tor is in non-anonymous hidden service mode. */
-int
-rend_service_reveal_startup_time(const or_options_t *options)
-{
-  tor_assert(rend_service_non_anonymous_mode_consistent(options));
-  return rend_service_non_anonymous_mode_enabled(options);
-}
-
 /* Is non-anonymous mode enabled using the HiddenServiceNonAnonymousMode
  * config option?
  * Must only be called after options_validate_single_onion() has successfully
