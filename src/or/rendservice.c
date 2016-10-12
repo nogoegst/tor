@@ -3922,8 +3922,8 @@ rend_consider_services_upload(time_t now)
   rend_service_t *service;
   const or_options_t *options = get_options();
   time_t stabilizing_period = (time_t) (options->TestingTorNetwork ?
-                                        REND_DIRTY_DESC_STABILIZING_PERIOD :
-                                        REND_DIRTY_DESC_STABILIZING_PERIOD_TESTING);
+                                        REND_DIRTY_DESC_STABILIZING_PERIOD_TESTING :
+                                        REND_DIRTY_DESC_STABILIZING_PERIOD);
   time_t old_stabilizing_period = (time_t) OLD_REND_DIRTY_DESC_STABILIZING_PERIOD;
   for (i=0; i < smartlist_len(rend_service_list); ++i) {
     service = smartlist_get(rend_service_list, i);
