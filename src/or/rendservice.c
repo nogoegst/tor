@@ -3905,7 +3905,8 @@ rend_consider_services_intro_points(void)
 #define REND_DIRTY_DESC_STABILIZING_PERIOD (3)
 #define REND_DIRTY_DESC_STABILIZING_PERIOD_TESTING (0)
 #define OLD_REND_DIRTY_DESC_STABILIZING_PERIOD (30)
-#define SHUFFLING_DISKSERVICE_PERIOD (10*60)
+#define DISKSERVICE_SHUFFLING_PERIOD (0)
+#define DISKSERVICE_SHUFFLING_PERIOD_TESTING (5*60)
 
 /** Regenerate and upload rendezvous service descriptors for all
  * services, if necessary. If the descriptor has been dirty enough
@@ -3923,6 +3924,9 @@ rend_consider_services_upload(time_t now)
   time_t stabilizing_period = (time_t) (options->TestingTorNetwork ?
                                         REND_DIRTY_DESC_STABILIZING_PERIOD_TESTING :
                                         REND_DIRTY_DESC_STABILIZING_PERIOD);
+  time_t diskservice_shuffling_period = (time_t) (options->TestingTorNetwork ?
+                                        DISKSERVICE_SHUFFLING_PERIOD_TESTING :
+                                        DISKSERVICE_SHUFFLING_PERIOD);
   time_t old_stabilizing_period = (time_t) OLD_REND_DIRTY_DESC_STABILIZING_PERIOD;
   for (i=0; i < smartlist_len(rend_service_list); ++i) {
     service = smartlist_get(rend_service_list, i);
@@ -3943,7 +3947,7 @@ rend_consider_services_upload(time_t now)
     /* Randomizing initial delay for each of these services. */
     if (!is_ephemeral) {
       service->next_upload_time = now +
-                         (time_t) crypto_rand_int(SHUFFLING_DISKSERVICE_PERIOD);
+                         (time_t) crypto_rand_int(diskservice_shuffling_period);
     }
     /* Does every introduction points have been established? */
     unsigned int intro_points_ready =
