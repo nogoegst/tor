@@ -3915,7 +3915,10 @@ rend_consider_services_intro_points(void)
  * for long enough, definitely upload; else only upload when the
  * periodic timeout has expired.
  *
- * For the first upload, upload immediately.
+ * For the first upload of on-disk service, pick a random time
+ * between now and DISKSERVICE_SHUFFLING_PERIOD from now, and
+ * pick it independently for each on-disk service.
+ * For the first upload of ephemeral service, upload immediately.
  */
 void
 rend_consider_services_upload(time_t now)
