@@ -300,6 +300,7 @@ static config_var_t option_vars_[] = {
   V(CloseHSServiceRendCircuitsImmediatelyOnTimeout, BOOL, "0"),
   V(HiddenServiceSingleHopMode,  BOOL,     "0"),
   V(HiddenServiceNonAnonymousMode,BOOL,    "0"),
+  V(ObfuscateOnionStartupTime,BOOL,    "0"),
   V(HTTPProxy,                   STRING,   NULL),
   V(HTTPProxyAuthenticator,      STRING,   NULL),
   V(HTTPSProxy,                  STRING,   NULL),

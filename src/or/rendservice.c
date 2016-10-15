@@ -3950,6 +3950,12 @@ rend_consider_services_upload(time_t now)
     service->next_upload_time = now;
     /* Set initial delay, i.e. if descriptor has never been uploaded */
     if (!service->last_upload_time) {
+     /* We do obfuscate onion services startup time. Set random delay */
+     /* before the first upload. */
+      if (options->ObfuscateOnionStartupTime) {
+        service->next_upload_time +=
+                           (time_t) crypto_rand_int(2*options->RendPostPeriod);
+      } else
       /* Non-ephemeral services are started at the same time that links */
       /* them and thus reveals that they are operated by same entity. */
       /* Randomizing initial delay for each of these services. */
