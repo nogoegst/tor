@@ -3737,6 +3737,9 @@ typedef struct {
    */
   int HiddenServiceNonAnonymousMode;
 
+  /* Obfuscate startup time for onion services. */
+  int ObfuscateOnionStartupTime;
+
   int ConnLimit; /**< Demanded minimum number of simultaneous connections. */
   int ConnLimit_; /**< Maximum allowed number of simultaneous connections. */
   int ConnLimit_high_thresh; /**< start trying to lower socket usage if we
