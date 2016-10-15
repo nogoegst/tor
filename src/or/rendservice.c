@@ -3945,13 +3945,14 @@ rend_consider_services_upload(time_t now)
                  safe_str_client(service->service_id));
     }
     unsigned int is_ephemeral = (service->directory == NULL);
-    /* Set initial delay if descriptor has never been uploaded */
+    service->next_upload_time = now;
+    /* Set initial delay, i.e. if descriptor has never been uploaded */
     if (!service->last_upload_time) {
       /* Non-ephemeral services are started at the same time that links */
       /* them and thus reveals that they are operated by same entity. */
       /* Randomizing initial delay for each of these services. */
       if (!is_ephemeral) {
-        service->next_upload_time = now +
+        service->next_upload_time +=
                            (time_t) crypto_rand_int(diskservice_shuffling_period);
       }
     }
@@ -3960,14 +3961,12 @@ rend_consider_services_upload(time_t now)
       count_established_intro_points(service) >=
         service->n_intro_points_wanted;
     if (intro_points_ready &&
-	/* never been uploaded and ephemeral*/
-        ((!service->last_upload_time && is_ephemeral) ||
         /* it's time to upload */
-        service->next_upload_time < now ||
+        (service->next_upload_time < now ||
         /* once uploaded and directory servers have a wrong service descriptor */
         /* and ours has been stable for stablizing_period */
-        (service->last_upload_time && service->desc_is_dirty &&
-         service->desc_is_dirty < now - stabilizing_period))) {
+         (service->last_upload_time && service->desc_is_dirty &&
+          service->desc_is_dirty < now - stabilizing_period))) {
       rend_service_update_descriptor(service);
       upload_service_descriptor(service);
       service->last_upload_time = now;
