@@ -3945,12 +3945,15 @@ rend_consider_services_upload(time_t now)
                  safe_str_client(service->service_id));
     }
     unsigned int is_ephemeral = (service->directory == NULL);
-    /* Non-ephemeral services are started at the same time that links */
-    /* them and thus reveals that they are operated by same entity. */
-    /* Randomizing initial delay for each of these services. */
-    if (!is_ephemeral && !service->last_upload_time) {
-      service->next_upload_time = now +
-                         (time_t) crypto_rand_int(diskservice_shuffling_period);
+    /* Set initial delay if descriptor has never been uploaded */
+    if (!service->last_upload_time) {
+      /* Non-ephemeral services are started at the same time that links */
+      /* them and thus reveals that they are operated by same entity. */
+      /* Randomizing initial delay for each of these services. */
+      if (!is_ephemeral) {
+        service->next_upload_time = now +
+                           (time_t) crypto_rand_int(diskservice_shuffling_period);
+      }
     }
     /* Does every introduction points have been established? */
     unsigned int intro_points_ready =
