@@ -3946,8 +3946,9 @@ rend_consider_services_upload(time_t now)
     }
     unsigned int is_ephemeral = (service->directory == NULL);
     service->next_upload_time = now;
-    /* Set initial delay, i.e. if descriptor has never been uploaded */
-    if (!service->last_upload_time) {
+    /* Set initial delay, i.e. if descriptor has never been uploaded and */
+    /* is not scheduled for upload */
+    if (!service->last_upload_time && !service->next_upload_time) {
       /* Non-ephemeral services are started at the same time that links */
       /* them and thus reveals that they are operated by same entity. */
       /* Randomizing initial delay for each of these services. */
