@@ -47,6 +47,8 @@ static int intro_point_accepted_intro_count(rend_intro_point_t *intro);
 static int intro_point_should_expire_now(rend_intro_point_t *intro,
                                          time_t now);
 static int rend_service_derive_key_digests(struct rend_service_t *s);
+static int rend_service_check_duplicate(const char *service_id,
+                                        const char *pk_digest);
 static int rend_service_load_keys(struct rend_service_t *s);
 static int rend_service_load_auth_keys(struct rend_service_t *s,
                                        const char *hfname);
@@ -827,17 +829,7 @@ rend_service_add_ephemeral(crypto_pk_t *pk,
     return RSAE_BADAUTH;
   }
 
-  /* Enforcing pk/id uniqueness should be done by rend_service_load_keys(), but
-   * it's not, see #14828.
-   */
-  if (rend_service_get_by_pk_digest(s->pk_digest)) {
-    log_warn(LD_CONFIG, "Onion Service private key collides with an "
-             "existing service.");
-    rend_service_free(s);
-    return RSAE_ADDREXISTS;
-  }
-  if (rend_service_get_by_service_id(s->service_id)) {
-    log_warn(LD_CONFIG, "Onion Service id collides with an existing service.");
+  if (rend_service_check_duplicate(s->service_id, s->pk_digest) < 0 ) {
     rend_service_free(s);
     return RSAE_ADDREXISTS;
   }
@@ -1245,6 +1237,25 @@ rend_service_derive_key_digests(struct rend_service_t *s)
   return 0;
 }
 
+/** Check if there is already a service with public key digest
+ * <b>pk_digest</b> or ServiceID <b>service_id</b>.
+ * Returns 0 if there is no colliding service, -1 otherwise.
+ */
+static int rend_service_check_duplicate(const char *service_id,
+                                        const char *pk_digest)
+{
+  if (rend_service_get_by_service_id(service_id)) {
+    log_warn(LD_CONFIG, "Onion Service ID collides with an existing service.");
+    return -1;
+  }
+  if (rend_service_get_by_pk_digest(pk_digest)) {
+    log_warn(LD_CONFIG, "Hash of Onion Service public key collides with an "
+             "existing service.");
+    return -1;
+  }
+  return 0;
+}
+
 /** Load and/or generate private keys for the hidden service <b>s</b>,
  * possibly including keys for client authorization.  Return 0 on success, -1
  * on failure. */
@@ -1281,7 +1292,11 @@ rend_service_load_keys(rend_service_t *s)
   if (rend_service_derive_key_digests(s) < 0)
     goto err;
 
+  if (rend_service_check_duplicate(s->service_id, s->pk_digest) < 0)
+    goto err;
+
   tor_free(fname);
+
   /* Create service file */
   fname = rend_service_path(s, hostname_fname);
 
