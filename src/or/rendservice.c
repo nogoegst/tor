@@ -3902,6 +3902,13 @@ rend_consider_services_intro_points(void)
   smartlist_free(retry_nodes);
 }
 
+/** Regenerate and upload rendezvous service descriptors for <b>service</b>.*/
+static void rend_service_update_and_upload(rend_service_t *service, time_t now) {
+     rend_service_update_descriptor(service);
+     upload_service_descriptor(service);
+     service->last_upload_time = now;
+}
+
 #define MIN_REND_INITIAL_POST_DELAY (30)
 #define MIN_REND_INITIAL_POST_DELAY_TESTING (5)
 
