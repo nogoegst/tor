@@ -2918,6 +2918,13 @@ count_established_intro_points(const rend_service_t *service)
   return num;
 }
 
+/** Tells if <b>service</b> has enough intropoints established */
+static unsigned int rend_service_intro_points_ready(rend_service_t *service)
+{
+     return (count_established_intro_points(service) >=
+             service->n_intro_points_wanted);
+}
+
 /** Return the number of introduction points that are or are being
  * established for the given service. This function iterates over all
  * circuit and count those that are linked to the service and are waiting
