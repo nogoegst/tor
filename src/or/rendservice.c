@@ -3916,6 +3916,25 @@ static void rend_service_update_and_upload(rend_service_t *service, time_t now) 
      service->last_upload_time = now;
 }
 
+#define REND_UNSTABLE_DESC_WARN_PERIOD (30)
+
+/** Drop a warning if descriptor has changed in first */
+/* REND_UNSTABLE_DESC_WARN_PERIOD seconds after last upload. */
+static void rend_service_warn_about_unstable_descriptor(rend_service_t *service)
+{
+  time_t unstable_desc_period = (time_t) REND_UNSTABLE_DESC_WARN_PERIOD;
+  /* Descriptor has changed and it's not an initial descriptor */
+  if (service->desc_is_dirty && service->last_upload_time) {
+    time_t was_stable_for = service->desc_is_dirty - service->last_upload_time;
+    if (was_stable_for < unstable_desc_period) {
+      log_warn(LD_REND, "Service descriptor of %s has changed soon \
+                         after upload. Probably your network connection isn't reliable. \
+                         this can make your service unreliable as well.",
+               safe_str_client(service->service_id));
+    }
+  }
+}
+
 #define REND_DIRTY_DESC_STABILIZING_PERIOD (3)
 #define REND_DIRTY_DESC_STABILIZING_PERIOD_TESTING (0)
 
@@ -3937,6 +3956,8 @@ rend_consider_services_upload(time_t now)
 
   for (i=0; i < smartlist_len(rend_service_list); ++i) {
     service = smartlist_get(rend_service_list, i);
+
+    rend_service_warn_about_unstable_descriptor(service);
 
     if (!rend_service_intro_points_ready(service)) {
       continue;
