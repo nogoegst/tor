@@ -1672,7 +1672,7 @@ tor_tls_setup_session_secret_cb(tor_tls_t *tls)
  * determine whether it is functioning as a server.
  */
 tor_tls_t *
-tor_tls_new(int sock, int isServer)
+tor_tls_new(int sock, int isServer, char *client_sni)
 {
   BIO *bio = NULL;
   tor_tls_t *result = tor_malloc_zero(sizeof(tor_tls_t));
@@ -1691,7 +1691,12 @@ tor_tls_new(int sock, int isServer)
 #ifdef SSL_set_tlsext_host_name
   /* Browsers use the TLS hostname extension, so we should too. */
   if (!isServer) {
-    char *fake_hostname = crypto_random_hostname(4,25, "www.",".com");
+    char *fake_hostname;
+    if (client_sni != NULL) {
+       fake_hostname = tor_strdup(client_sni);
+    } else {
+       fake_hostname = crypto_random_hostname(4,25, "www.",".com");
+    }
     SSL_set_tlsext_host_name(result->ssl, fake_hostname);
     tor_free(fake_hostname);
   }

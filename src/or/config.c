@@ -297,6 +297,7 @@ static config_var_t option_vars_[] = {
   V(ClientTransportPlugin,       LINELIST, NULL),
   V(ClientUseIPv6,               BOOL,     "0"),
   V(ClientUseIPv4,               BOOL,     "1"),
+  V(ClientSNI,                   STRING,   NULL),
   V(ConsensusParams,             STRING,   NULL),
   V(ConnLimit,                   UINT,     "1000"),
   V(ConnDirectionStatistics,     BOOL,     "0"),

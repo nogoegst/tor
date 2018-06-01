@@ -251,6 +251,11 @@ GENERAL OPTIONS
     field, Tor will use it for separate rate limiting for each connection
     from a non-relay. (Default: 0)
 
+[[ClientSNI]] **ClientSNI** __hostname__::
+    Set Server Name Indication (SNI) extension for all client TLS connections
+    to \'hostname' instead of generating a random one. This can help going around
+    the firewalls which block Tor based on the way it manipulates SNI.
+
 [[ClientTransportPlugin]] **ClientTransportPlugin** __transport__ socks4|socks5 __IP__:__PORT__::
 **ClientTransportPlugin** __transport__ exec __path-to-binary__ [options]::
     In its first form, when set along with a corresponding Bridge line, the Tor

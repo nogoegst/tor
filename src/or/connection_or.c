@@ -1599,7 +1599,7 @@ connection_tls_start_handshake,(or_connection_t *conn, int receiving))
 
   connection_or_change_state(conn, OR_CONN_STATE_TLS_HANDSHAKING);
   tor_assert(!conn->tls);
-  conn->tls = tor_tls_new(conn->base_.s, receiving);
+  conn->tls = tor_tls_new(conn->base_.s, receiving, get_options()->ClientSNI);
   if (!conn->tls) {
     log_warn(LD_BUG,"tor_tls_new failed. Closing.");
     return -1;

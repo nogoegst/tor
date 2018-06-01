@@ -4294,6 +4294,10 @@ typedef struct {
    * accessing this value directly.  */
   int ClientPreferIPv6DirPort;
 
+  /** If set, the value will be set as Server Name Indication (SNI) for
+   * all client TLS connections instead of generating a random one. */
+  char *ClientSNI;
+
   /** The length of time that we think a consensus should be fresh. */
   int V3AuthVotingInterval;
   /** The length of time we think it will take to distribute votes. */
